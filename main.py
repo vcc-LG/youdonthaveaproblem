@@ -52,7 +52,8 @@ def tweet_string(titles):
     second_title = random.choice(titles).strip()
     first_indefinite_article = indefinite_article(first_title)
     second_indefinite_article = indefinite_article(first_title)
-    return 'You don\'t have %s %s problem - You have %s %s opportunity!' % (first_indefinite_article, first_title, second_indefinite_article, second_title)
+    second_noun = random.choice(['opportunity', 'deficiency')
+    return 'You don\'t have %s %s problem - You have %s %s %s!' % (first_indefinite_article, first_title, second_indefinite_article, second_title, second_noun)
 
 
 def post_tweet(tweet):
