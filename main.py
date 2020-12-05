@@ -3,7 +3,7 @@ import json
 import random
 import re
 import base64
-
+import os
 import tweepy
 
 CONSUMER_KEY = "YOUR_API_KEY"
@@ -19,6 +19,29 @@ api = tweepy.API(auth)
 url = 'https://en.wikipedia.org/w/api.php?format=json&action=query&generator=random&grnnamespace=0&prop=revisions%7Cimages&rvprop=content&grnlimit=10'
 vowels = ('a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U')
 regex = re.compile(".*?\((.*?)\)")
+filename = 'temp.jpg'
+
+
+def save_profile_image(title):
+    try:
+        os.remove(filename)
+    except Exception as e:
+        pass
+    profile_image_url = 'https://en.wikipedia.org/w/api.php?action=query&titles=' + \
+        title + '&prop=pageimages&format=json&pithumbsize=100'
+    profile_request = requests.get(profile_image_url, stream=True).json()
+    for item in profile_request['query']['pages']:
+        data = profile_request['query']['pages'][item]
+        if data.get('thumbnail'):
+            image_file_url = data.get('thumbnail')['source']
+            try:
+                img_data = requests.get(image_file_url).content
+                with open(filename, 'wb') as handler:
+                    handler.write(img_data)
+                return True
+            except Exception as e:
+                return False
+    return False
 
 
 def title_list_from_json(obj, key):
@@ -47,18 +70,26 @@ def indefinite_article(string):
     return 'an' if string.startswith(vowels) else 'a'
 
 
-def tweet_string(titles):
+def compose_and_post_tweet(titles):
     first_title = random.choice(titles).strip()
     second_title = random.choice(titles).strip()
     first_indefinite_article = indefinite_article(first_title)
     second_indefinite_article = indefinite_article(first_title)
-    second_noun = random.choice(['opportunity', 'deficiency')
-    return 'You don\'t have %s %s problem - You have %s %s %s!' % (first_indefinite_article, first_title, second_indefinite_article, second_title, second_noun)
-
-
-def post_tweet(tweet):
-    print(tweet)
-    api.update_status(tweet)
+    second_noun = random.choice(['opportunity', 'deficiency'])
+    tweet_string = 'You don\'t have %s %s problem - You have %s %s %s!' % (
+        first_indefinite_article, first_title, second_indefinite_article, second_title, second_noun)
+    first_choice_title, second_choice_title = [random.choice([first_title, second_title]), random.choice([first_title, second_title])]
+    if save_profile_image(first_choice_title) == True:
+        api.update_with_media(filename, status=tweet_string)
+        print('Posted tweet with media')
+    else:
+        if save_profile_image(second_choice_title) == True:
+            api.update_with_media(filename, status=tweet_string)
+            print('Posted tweet with media')
+        else:
+            api.update_status(tweet_string)
+            print('Posted tweet')
+    return
 
 
 def raw_data():
@@ -66,7 +97,7 @@ def raw_data():
     return resp.json()
 
 
-def hello_pubsub(event, context):
+def interpolate_titles_and_tweet():
     """Triggered from a message on a Cloud Pub/Sub topic.
     Args:
          event (dict): Event payload.
@@ -76,4 +107,8 @@ def hello_pubsub(event, context):
     print(pubsub_message)
     titles = title_list_from_json(raw_data(), 'title')
     if titles:
-        post_tweet(tweet_string(titles))
+        compose_and_post_tweet(titles)
+
+
+if __name__ == "__main__":
+    interpolate_titles_and_tweet()
