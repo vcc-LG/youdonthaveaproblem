@@ -8,6 +8,8 @@ For example: "You don't have a slug problem, you have a duck deficiency"
 
 This bot goes and fetches 2 random article titles from wikipedia and interpolates them into this phrase.
 
-Why?
+It is a Google function triggered on a Cloud scheduler. I chose Google Cloud over AWS because apparently Google use more renewable energy to power their servers than AWS. 
+
+Why bother?
 
 Because I think it might once in a while throw up something funny or interesting.
